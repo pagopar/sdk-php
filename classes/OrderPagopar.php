@@ -9,7 +9,7 @@ require_once 'ItemPagopar.php';
 require_once 'BuyerPagopar.php';
 
 class OrderPagopar{
-    public $order = [];
+    public $order = null;
 
     public $idOrder;
     public $publicKey;
@@ -21,10 +21,11 @@ class OrderPagopar{
 
     /**
      * Constructor de la clase
+     * @param int $id Id del pedido
      */
     public function __construct($id){
         $this->idOrder = $id;
-        $this->order = [
+        $this->order = (object) [
             'tipo_pedido' => null,
             'fecha_maxima_pago' => null,
             'public_key' => null,
@@ -35,6 +36,15 @@ class OrderPagopar{
             'comprador' => null,
             'compras_items' => null
         ];
+        /*$this->order->tipo_pedido = null;
+        $this->order->fecha_maxima_pago = null;
+        $this->order->public_key = null;
+        $this->order->id_pedido_comercio = null;
+        $this->order->monto_total = null;
+        $this->order->token = null;
+        $this->order->descripcion_resumen = null;
+        $this->order->comprador = null;
+        $this->order->compras_items = null;*/
     }
 
     /**
@@ -43,11 +53,11 @@ class OrderPagopar{
      * @throws Exception
      */
     public function addPagoparItem($item){
-        $error = $this->validateItemAttributes($item->name, $item->qty, $item->price, $item->cityId);
+        $error = $this->validateItemAttributes($item->name, $item->qty, $item->price, $item->cityId, $item->productId);
         if($error['status']){
             throw new Exception($error['msg']);
         }
-        $this->order['compras_items'][] = $item->formatToArray();
+        $this->order->compras_items[] = $item->formatToArray();
     }
 
     /**
@@ -56,24 +66,29 @@ class OrderPagopar{
      * @param int $qty (Obligatorio) Cantidad de unidades del producto
      * @param int $price (Obligatorio) Suma total de los precios de los productos
      * @param int $cityId (Obligatorio) Id de la ciudad
+     * @param int $productId (Obligatorio) Id del producto
      * @return array $error Array con el status (true|false) y el mensaje de error
      */
-    private function validateItemAttributes($name, $qty, $price, $cityId){
+    private function validateItemAttributes($name, $qty, $price, $cityId, $productId){
         $error = ['status'=>false,'msg'=>''];
         if(empty($name)){
             $error['status'] = true; $error['msg'] = "Hay un error con el nombre de algún producto";
             return $error;
         }
         if(empty($qty) || !is_numeric($qty) || $qty < 0){
-            $error['status'] = true; $error['msg'] = "Hay un error en la cantidad del producto con nombre '{$name}'";
+            $error['status'] = true; $error['msg'] = "Hay un error en la cantidad del producto '{$name}'";
             return $error;
         }
         if(empty($price) || !is_numeric($price) || $price < 0){
-            $error['status'] = true; $error['msg'] = "Hay un error en el precio del producto con nombre '{$name}'";
+            $error['status'] = true; $error['msg'] = "Hay un error en el precio del producto '{$name}'";
             return $error;
         }
         if(empty($cityId) || !is_numeric($cityId) || $cityId < 0){
-            $error['status'] = true; $error['msg'] = "Hay un error en el ID de la ciudad del producto con nombre '{$name}'";
+            $error['status'] = true; $error['msg'] = "Hay un error en el ID de la ciudad del producto '{$name}'";
+            return $error;
+        }
+        if(empty($productId) || !is_numeric($productId) || $productId < 0){
+            $error['status'] = true; $error['msg'] = "Hay un error en el ID del producto '{$name}'";
             return $error;
         }
         return $error;
@@ -81,7 +96,7 @@ class OrderPagopar{
 
     /**
      * Agrega un comprador al pedido
-
+     * @param object $buyer Comprador
      * @throws Exception
      */
     public function addPagoparBuyer($buyer){
@@ -90,7 +105,7 @@ class OrderPagopar{
             throw new Exception($error['msg']);
         }
 
-        $this->order['comprador'] = $buyer->formatToArray();
+        $this->order->comprador = $buyer->formatToArray();
     }
 
     /**
@@ -144,10 +159,11 @@ class OrderPagopar{
      * Genera un hash del pedido
      * @param int $id Id del pedido
      * @param int $amount Monto total del pedido
+     * @param string $private_key Clave privada
      * @return string Hash del pedido
      */
-    private function generateOrderHash($id = null, $amount = 0, $private_token = null){
-        return sha1($private_token . $id . $amount);
+    public function generateOrderHash($id = null, $amount = 0, $private_key = null){
+        return sha1($private_key . $id . $amount);
     }
 
     /**
@@ -155,14 +171,16 @@ class OrderPagopar{
      * @return string Fecha en formato yyyy-mm-dd hh:mm:ss
      */
     private function makeMaxDateForPayment(){
+        date_default_timezone_set("America/Asuncion");
         //Transformamos el día a horas
         $daysToHours = ($this->periodOfDaysForPayment)?($this->periodOfDaysForPayment*24):0;
-        return date("Y-m-d H:i:s",mktime(date("h")+$this->periodOfHoursForPayment+$daysToHours,
+        return date("Y-m-d H:i:s",mktime(date("H")+$this->periodOfHoursForPayment+$daysToHours,
             date("i"),date("s"),date("m"),date("d"),date("Y")));
     }
 
     /**
      * Obtiene el precio total de la compra
+     * @param array $items Productos
      * @return int Suma total del precio de los Items
      */
     private function getTotalAmount($items){
@@ -175,13 +193,6 @@ class OrderPagopar{
 
     /**
      * Genera el pedido
-     * @param int $idOrder Id del pedido
-     * @param string $publicKey (Obligatorio) Clave pública del comercio
-     * @param string $privateKey (Obligatorio) Clave privada del comercio
-     * @param int $typeOrder (Obligatorio) Tipo de pedido
-     * @param string $desc Descripción del pedido
-     * @param int $periodDays Periodo máximo de días para completar el pago
-     * @param int $periodHours Periodo máximo de horas para completar el pago
      * @return array Array formado del pedido
      * @throws Exception
      */
@@ -199,16 +210,16 @@ class OrderPagopar{
             throw new Exception($error['msg']);
         }
 
-        $totalAmount = $this->getTotalAmount($this->order['compras_items']);
+        $totalAmount = $this->getTotalAmount($this->order->compras_items);
 
         //Datos de configuración del pedido
-        $this->order['public_key'] = $this->publicKey;
-        $this->order['tipo_pedido'] = $this->typeOrder;
-        $this->order['fecha_maxima_pago'] = $this->makeMaxDateForPayment();
-        $this->order['id_pedido_comercio'] = $this->idOrder;
-        $this->order['monto_total'] = $totalAmount;
-        $this->order['token'] = $this->generateOrderHash($this->idOrder,$totalAmount,$this->privateKey);
-        $this->order['descripcion_resumen'] = $this->desc;
+        $this->order->public_key = $this->publicKey;
+        $this->order->tipo_pedido = $this->typeOrder;
+        $this->order->fecha_maxima_pago = $this->makeMaxDateForPayment();
+        $this->order->id_pedido_comercio = $this->idOrder;
+        $this->order->monto_total = $totalAmount;
+        $this->order->token = $this->generateOrderHash($this->idOrder,$totalAmount,$this->privateKey);
+        $this->order->descripcion_resumen = $this->desc;
 
         return $this->order;
     }

@@ -14,15 +14,16 @@ class ItemPagopar{
     public $desc; //string Descripción del producto
     public $url_img; //string Url de la imagen del producto
     public $weight; //string Peso del producto
+    public $category;//int Id de la Categoría
+    public $productId;//int Id del producto (elegido por el usuario)
+    public $large;//string Largo del producto
+    public $width;//string Ancho del producto
+    public $height;//string Alto del producto
     public $sellerPhone; //string Teléfono del vendedor
-    public $sellerEmail; //string Email del vendedor
     public $sellerAddress; //string Dirección del vendedor
     public $sellerAddressRef; //string Referencia de la dirección del vendedor
     public $sellerAddressCoo; //string Coordenadas (latitud y longitud separados por coma) de la dirección del vendedor
-    public $category;
-    /*public $large;
-    public $width;
-    public $height;*/
+    public $sellerPublicKey;//string Clave pública del vendedor
 
     /**
      * Constructor de la clase
@@ -35,8 +36,6 @@ class ItemPagopar{
      * @return array Array del Producto
      */
     public function formatToArray(){
-        $envioAEX1['costo'] = null;
-        $envioAEX1['tiempo_entrega'] = null;
         return [
             'nombre' => $this->name,
             'cantidad' => $this->qty,
@@ -46,17 +45,15 @@ class ItemPagopar{
             'url_imagen' => $this->url_img,
             'peso' => $this->weight,
             'vendedor_telefono' => $this->sellerPhone,
-            'vendedor_email' => $this->sellerEmail,
             'vendedor_direccion' => $this->sellerAddress,
             'vendedor_direccion_referencia' => $this->sellerAddressRef,
             'vendedor_direccion_coordenadas' => $this->sellerAddressCoo,
-            'opciones_envio' => [
-                'metodo_aex' => $envioAEX1
-            ],
+            'public_key' => $this->sellerPublicKey,
             'categoria' => $this->category,
-            /*'largo' => $this->large,
+            'id_producto' => $this->productId,
+            'largo' => $this->large,
             'ancho' => $this->width,
-            'alto' => $this->height*/
+            'alto' => $this->height
         ];
     }
 }

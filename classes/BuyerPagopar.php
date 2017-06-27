@@ -8,8 +8,8 @@
 class BuyerPagopar{
 
     public $name; //string (Obligatorio) Nombre del producto
-    public $email; //string (Obligatorio) Email del comprador
     public $cityId; //int (Obligatorio) Id de la ciudad
+    public $email; //string Email del Comprador
     public $tel; //string Teléfono del comprador
     public $typeDoc; //string Tipo de documento del comprador
     public $doc; //string Documento del comprador
@@ -32,8 +32,8 @@ class BuyerPagopar{
     public function formatToArray(){
         return [
             'nombre' => $this->name,
-            'email' => $this->email,
             'ciudad' => $this->cityId,
+            'email'  => $this->email,
             'telefono' => $this->tel,
             'tipo_documento' => $this->typeDoc,
             'documento' => $this->doc,
