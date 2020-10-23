@@ -1,3 +1,8 @@
+# IMPORTANTE
+## Este SDK está desfasado, por lo cual para implementar Pagopar aconsejamos hacerlo utilizando la API https://soporte.pagopar.com/portal/es/kb/articles/api-integracion-medios-pagos
+## Además de implementar vía API, podés echar un vistazo a nuestras soluciones tipo plugin para las plataformas Woocommerce, Prestashop y Shopify. Más información en  https://soporte.pagopar.com/
+
+
 # SDK PHP Pagopar
 
 ## Primeros pasos
